@@ -79,6 +79,32 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
+    # Protection Layer - Rate Limiting
+    RATE_LIMIT_ENABLED: bool = True
+    RATE_LIMIT_PER_MINUTE: int = 10  # Requests per minute per user
+    RATE_LIMIT_WINDOW: int = 60  # Time window in seconds
+    
+    # Protection Layer - Daily Quota
+    QUOTA_ENABLED: bool = True
+    DAILY_TOKEN_LIMIT: int = 1_000_000  # Max tokens per user per day
+    DAILY_COST_LIMIT: float = 10.0  # Max cost (USD) per user per day
+    
+    # Protection Layer - Circuit Breaker
+    CIRCUIT_BREAKER_ENABLED: bool = True
+    CIRCUIT_BREAKER_FAILURE_THRESHOLD: int = 5  # Failures before opening
+    CIRCUIT_BREAKER_SUCCESS_THRESHOLD: int = 2  # Successes to close
+    CIRCUIT_BREAKER_TIMEOUT: float = 60.0  # Seconds before retry
+    CIRCUIT_BREAKER_WINDOW: float = 60.0  # Time window for counting failures
+    
+    # Protection Layer - Load Shedding
+    LOAD_SHEDDING_ENABLED: bool = True
+    CPU_THRESHOLD_ELEVATED: float = 70.0  # CPU % for elevated load
+    CPU_THRESHOLD_HIGH: float = 85.0  # CPU % for high load
+    CPU_THRESHOLD_CRITICAL: float = 95.0  # CPU % for critical load
+    MEMORY_THRESHOLD_ELEVATED: float = 75.0  # Memory % for elevated load
+    MEMORY_THRESHOLD_HIGH: float = 90.0  # Memory % for high load
+    MEMORY_THRESHOLD_CRITICAL: float = 95.0  # Memory % for critical load
+    
     @property
     def DATABASE_URL(self) -> str:
         """Construct PostgreSQL async database URL."""

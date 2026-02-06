@@ -218,3 +218,158 @@ class Chunk(Base):
             "hierarchy": self.hierarchy,
             "created_at": self.created_at.isoformat(),
         }
+
+
+class ChatInteraction(Base):
+    """Chat interaction model for monitoring and analytics."""
+    
+    __tablename__ = "chat_interactions"
+    
+    # Primary key
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        unique=True,
+        nullable=False,
+        index=True,
+    )
+    
+    # User information
+    user_id = Column(String(255), nullable=False, index=True)
+    
+    # Query and response
+    query = Column(Text, nullable=False)
+    answer = Column(Text, nullable=False)
+    
+    # Quality metrics
+    confidence_score = Column(Float, nullable=False)
+    citations_count = Column(Integer, default=0)
+    
+    # Performance metrics
+    latency_ms = Column(Float, nullable=False)
+    retrieval_latency_ms = Column(Float, nullable=True)
+    generation_latency_ms = Column(Float, nullable=True)
+    
+    # Token usage
+    prompt_tokens = Column(Integer, nullable=True)
+    completion_tokens = Column(Integer, nullable=True)
+    total_tokens = Column(Integer, nullable=True)
+    
+    # Model information
+    model_name = Column(String(100), nullable=False)
+    
+    # Cost tracking
+    cost_estimate = Column(Float, nullable=True)
+    
+    # Timestamps
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+        index=True,
+    )
+    
+    # Relationship
+    feedbacks = relationship("ChatFeedback", backref="interaction", cascade="all, delete-orphan")
+    
+    # Indexes
+    __table_args__ = (
+        Index(
+            "ix_chat_interactions_user_created",
+            "user_id",
+            "created_at",
+        ),
+        Index(
+            "ix_chat_interactions_confidence",
+            "confidence_score",
+        ),
+    )
+    
+    def __repr__(self) -> str:
+        return (
+            f"<ChatInteraction(id={self.id}, user_id={self.user_id}, "
+            f"confidence={self.confidence_score})>"
+        )
+    
+    def to_dict(self) -> dict:
+        """Convert model to dictionary."""
+        return {
+            "id": str(self.id),
+            "user_id": self.user_id,
+            "query": self.query,
+            "answer": self.answer,
+            "confidence_score": self.confidence_score,
+            "citations_count": self.citations_count,
+            "latency_ms": self.latency_ms,
+            "retrieval_latency_ms": self.retrieval_latency_ms,
+            "generation_latency_ms": self.generation_latency_ms,
+            "prompt_tokens": self.prompt_tokens,
+            "completion_tokens": self.completion_tokens,
+            "total_tokens": self.total_tokens,
+            "model_name": self.model_name,
+            "cost_estimate": self.cost_estimate,
+            "created_at": self.created_at.isoformat(),
+        }
+
+
+class ChatFeedback(Base):
+    """Chat feedback model for user ratings and comments."""
+    
+    __tablename__ = "chat_feedbacks"
+    
+    # Primary key
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        unique=True,
+        nullable=False,
+        index=True,
+    )
+    
+    # Foreign key to interaction
+    interaction_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("chat_interactions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    
+    # Feedback data
+    rating = Column(
+        Integer,
+        nullable=False,
+    )
+    comment = Column(Text, nullable=True)
+    
+    # Timestamp
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+    )
+    
+    # Indexes
+    __table_args__ = (
+        Index(
+            "ix_chat_feedbacks_rating",
+            "rating",
+        ),
+    )
+    
+    def __repr__(self) -> str:
+        return (
+            f"<ChatFeedback(id={self.id}, interaction_id={self.interaction_id}, "
+            f"rating={self.rating})>"
+        )
+    
+    def to_dict(self) -> dict:
+        """Convert model to dictionary."""
+        return {
+            "id": str(self.id),
+            "interaction_id": str(self.interaction_id),
+            "rating": self.rating,
+            "comment": self.comment,
+            "created_at": self.created_at.isoformat(),
+        }

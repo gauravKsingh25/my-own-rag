@@ -83,6 +83,10 @@ class TokenUsageInfo(BaseModel):
 class ChatResponse(BaseModel):
     """Response schema for chat endpoint."""
     
+    interaction_id: Optional[str] = Field(
+        None,
+        description="Unique interaction ID for feedback",
+    )
     answer: str = Field(..., description="Generated answer")
     citations: List[int] = Field(
         default_factory=list,
@@ -111,6 +115,7 @@ class ChatResponse(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
+                "interaction_id": "123e4567-e89b-12d3-a456-426614174000",
                 "answer": "Machine learning offers several key benefits. First, it excels at automatic feature extraction [Source 1]. Second, it handles large-scale data efficiently [Source 2, 3].",
                 "citations": [1, 2, 3],
                 "confidence_score": 0.92,
@@ -148,5 +153,49 @@ class ChatErrorResponse(BaseModel):
                 "error": "No relevant documents found for query",
                 "error_type": "NotFoundError",
                 "details": {"user_id": "user_123", "query_length": 45},
+            }
+        }
+
+    """Request schema for feedback endpoint."""
+    
+    interaction_id: str = Field(
+        ...,
+        description="Interaction ID from chat response",
+    )
+    rating: int = Field(
+        ...,
+        description="Rating from 1 (poor) to 5 (excellent)",
+        ge=1,
+        le=5,
+    )
+    comment: Optional[str] = Field(
+        None,
+        description="Optional feedback comment",
+        max_length=2000,
+    )
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "interaction_id": "123e4567-e89b-12d3-a456-426614174000",
+                "rating": 5,
+                "comment": "Great answer with accurate citations!",
+            }
+        }
+
+
+class FeedbackResponse(BaseModel):
+    """Response schema for feedback endpoint."""
+    
+    success: bool = Field(..., description="Whether feedback was recorded")
+    message: str = Field(..., description="Status message")
+    feedback_id: Optional[str] = Field(None, description="Feedback UUID")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": True,
+                "message": "Feedback recorded successfully",
+                "feedback_id": "123e4567-e89b-12d3-a456-426614174002",
             }
         }
