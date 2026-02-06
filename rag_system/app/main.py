@@ -20,6 +20,7 @@ from app.db.database import init_db, close_db
 from app.db.redis import redis_client
 from app.api.health import router as health_router
 from app.api.documents import router as documents_router
+from app.api.chat import router as chat_router
 
 # Setup logging
 setup_logging()
@@ -105,6 +106,7 @@ app.add_exception_handler(Exception, general_exception_handler)
 # Include routers
 app.include_router(health_router, prefix="", tags=["Health"])
 app.include_router(documents_router, prefix=settings.API_V1_PREFIX, tags=["Documents"])
+app.include_router(chat_router, tags=["Chat"])
 
 # Root endpoint
 @app.get("/", tags=["Root"])

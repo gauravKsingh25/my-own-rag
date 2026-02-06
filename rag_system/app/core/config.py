@@ -55,6 +55,25 @@ class Settings(BaseSettings):
     STORAGE_BASE_PATH: str = "./storage"
     MAX_FILE_SIZE_MB: int = 100
     
+    # Gemini AI
+    GEMINI_API_KEY: str = "your-gemini-api-key-here"
+    GEMINI_MODEL: str = "models/embedding-001"
+    GEMINI_TIMEOUT: int = 30
+    GEMINI_MAX_RETRIES: int = 3
+    
+    # Pinecone
+    PINECONE_API_KEY: str = "your-pinecone-api-key-here"
+    PINECONE_ENVIRONMENT: str = "us-west1-gcp"
+    PINECONE_INDEX_NAME: str = "rag-embeddings"
+    PINECONE_DIMENSION: int = 768
+    PINECONE_CLOUD: str = "gcp"
+    
+    # Generation Model
+    GENERATION_MODEL: str = "gemini-1.5-pro-latest"
+    MODEL_MAX_TOKENS: int = 1048576  # Gemini 1.5 Pro context window
+    MAX_OUTPUT_TOKENS: int = 8192  # Maximum tokens for answer
+    TEMPERATURE: float = 0.1  # Low temperature for factual responses
+    
     # Security
     SECRET_KEY: str = "your-secret-key-here-change-in-production"
     ALGORITHM: str = "HS256"

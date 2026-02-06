@@ -10,6 +10,10 @@ from app.db.database import AsyncSessionLocal
 from app.db.models import ProcessingStatus
 from app.services.ingestion import ingestion_manager
 from app.services.parsing import ParserFactory
+from app.services.chunking import SemanticChunker, HierarchicalChunker
+from app.services.embeddings import EmbeddingService, TaskType
+from app.services.vector_store import VectorService
+from app.services.database import ChunkService
 from app.core.config import settings
 from app.core.logging import get_logger
 
@@ -148,16 +152,6 @@ async def process_document(self, document_id: str) -> dict:
             }
         )
         
-        # ============================================================
-        # PLACEHOLDER: Future RAG processing
-        # ============================================================
-        # Next steps (not implemented yet):
-        # 1. Chunk sections into smaller segments
-        # 2. Generate embeddings for each chunk
-        # 3. Store embeddings in vector database (Pinecone, etc.)
-        # 4. Update metadata with chunking/embedding info
-        # ============================================================
-        
         # Update status to PARSED
         await ingestion_manager.update_document_status(
             document_id=doc_id,
@@ -166,21 +160,195 @@ async def process_document(self, document_id: str) -> dict:
         )
         
         logger.info(
+            f"Document status updated to PARSED",
+            extra={"document_id": document_id}
+        )
+        
+        # ============================================================
+        # CHUNKING PHASE
+        # ============================================================
+        
+        logger.info(
+            f"Starting document chunking",
+            extra={"document_id": document_id}
+        )
+        
+        # Initialize semantic chunker
+        chunker = SemanticChunker(
+            max_tokens=500,
+            overlap=100,
+            min_chunk_tokens=50,
+        )
+        
+        # Chunk the document
+        chunked_doc = await chunker.chunk_document(
+            parsed_doc=parsed_doc,
+            filename=document.filename,
+            version=document.version,
+        )
+        
+        # Validate hierarchy
+        hierarchy_valid = HierarchicalChunker.validate_hierarchy(
+            chunked_doc=chunked_doc,
+            parsed_doc=parsed_doc,
+        )
+        
+        if not hierarchy_valid:
+            logger.warning(
+                f"Chunk hierarchy validation failed",
+                extra={"document_id": document_id}
+            )
+        
+        # Get hierarchy statistics
+        hierarchy_stats = HierarchicalChunker.get_hierarchy_stats(
+            chunked_doc=chunked_doc,
+            parsed_doc=parsed_doc,
+        )
+        
+        logger.info(
+            f"Document chunking completed",
+            extra={
+                "document_id": document_id,
+                "total_chunks": chunked_doc.get_total_chunks(),
+                "total_tokens": chunked_doc.get_total_tokens(),
+                "avg_chunk_size": chunked_doc.get_average_chunk_size(),
+                **hierarchy_stats,
+            }
+        )
+        
+        # Update status to CHUNKED
+        await ingestion_manager.update_document_status(
+            document_id=doc_id,
+            status=ProcessingStatus.CHUNKED,
+            db=db,
+        )
+        
+        logger.info(
+            f"Document status updated to CHUNKED",
+            extra={"document_id": document_id}
+        )
+        
+        # ============================================================
+        # EMBEDDING PHASE
+        # ============================================================
+        
+        logger.info(
+            f"Starting embedding generation",
+            extra={"document_id": document_id}
+        )
+        
+        # Initialize embedding service
+        embedding_service = EmbeddingService()
+        
+        # Get all chunks from chunked document
+        all_chunks = chunked_doc.get_all_chunks()
+        
+        # Generate embeddings with caching and deduplication
+        embedded_chunks = await embedding_service.embed_chunks(
+            chunks=all_chunks,
+            task_type=TaskType.RETRIEVAL_DOCUMENT,
+        )
+        
+        logger.info(
+            f"Embedding generation completed",
+            extra={
+                "document_id": document_id,
+                "chunks": len(all_chunks),
+                "embedded_chunks": len(embedded_chunks),
+            }
+        )
+        
+        # Update status to EMBEDDED
+        await ingestion_manager.update_document_status(
+            document_id=doc_id,
+            status=ProcessingStatus.EMBEDDED,
+            db=db,
+        )
+        
+        logger.info(
+            f"Document status updated to EMBEDDED",
+            extra={"document_id": document_id}
+        )
+        
+        # ============================================================
+        # VECTOR STORAGE PHASE
+        # ============================================================
+        
+        logger.info(
+            f"Starting vector storage",
+            extra={"document_id": document_id}
+        )
+        
+        # Initialize vector service
+        vector_service = VectorService()
+        
+        # Store embedded chunks in Pinecone
+        vectors_stored = vector_service.store_document_chunks(
+            embedded_chunks=embedded_chunks,
+            document_id=document_id,
+            user_id=document.user_id,
+        )
+        
+        logger.info(
+            f"Vector storage completed",
+            extra={
+                "document_id": document_id,
+                "vectors_stored": vectors_stored,
+            }
+        )
+        
+        # ============================================================
+        # DATABASE STORAGE PHASE
+        # ============================================================
+        
+        logger.info(
+            f"Starting database chunk storage",
+            extra={"document_id": document_id}
+        )
+        
+        # Store chunks in database with tsvector for full-text search
+        chunks_stored = await ChunkService.store_chunks(
+            embedded_chunks=embedded_chunks,
+            document_id=doc_id,
+            user_id=document.user_id,
+            db=db,
+        )
+        
+        logger.info(
+            f"Database chunk storage completed",
+            extra={
+                "document_id": document_id,
+                "chunks_stored": chunks_stored,
+            }
+        )
+        
+        # Update status to COMPLETED
+        await ingestion_manager.update_document_status(
+            document_id=doc_id,
+            status=ProcessingStatus.COMPLETED,
+            db=db,
+        )
+        
+        logger.info(
             f"Document processing completed successfully",
             extra={
                 "document_id": document_id,
                 "task_id": self.request.id,
-                "final_status": "PARSED",
+                "final_status": "COMPLETED",
             }
         )
         
         return {
             "document_id": document_id,
-            "status": "PARSED",
+            "status": "COMPLETED",
             "task_id": self.request.id,
             "sections_count": sections_count,
             "total_chars": total_chars,
             "total_pages": parsed_doc.total_pages,
+            "chunks_count": chunked_doc.get_total_chunks(),
+            "total_tokens": chunked_doc.get_total_tokens(),
+            "embedded_chunks": len(embedded_chunks),
+            "vectors_stored": vectors_stored,
         }
         
     except Exception as e:
