@@ -34,7 +34,7 @@ tiktoken==0.5.2
 
 # Embeddings and Vector Database
 google-generativeai==0.3.2
-pinecone-client==3.0.0
+pinecone-client==5.0.1
 
 # Logging
 python-json-logger==2.0.7

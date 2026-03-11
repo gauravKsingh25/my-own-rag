@@ -133,6 +133,7 @@ class GeminiGenerator:
         system_prompt: str,
         user_prompt: str,
         stream: bool = False,
+        max_output_tokens: Optional[int] = None,
     ) -> AnswerResponse:
         """
         Generate answer using Gemini LLM.
@@ -141,6 +142,7 @@ class GeminiGenerator:
             system_prompt: System instructions
             user_prompt: User prompt with context and query
             stream: Enable streaming (not implemented yet)
+            max_output_tokens: Maximum tokens for generation (overrides configured value)
             
         Returns:
             AnswerResponse: Generated answer with metadata
@@ -167,14 +169,13 @@ class GeminiGenerator:
             # Configure generation parameters
             generation_config = genai.types.GenerationConfig(
                 temperature=self.temperature,
-                max_output_tokens=self.max_output_tokens,
+                max_output_tokens=max_output_tokens if max_output_tokens is not None else self.max_output_tokens,
             )
             
             # Generate response
             response = self.model.generate_content(
                 full_prompt,
                 generation_config=generation_config,
-                request_options={'timeout': self.timeout},
             )
             
             # Calculate latency

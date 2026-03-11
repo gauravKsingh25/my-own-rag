@@ -62,7 +62,7 @@ class ChunkService:
                 "token_count": chunk.token_count,
                 "section_title": chunk.section_title,
                 "page_number": chunk.page_number,
-                "hierarchy": chunk.hierarchy,
+                "hierarchy": getattr(chunk, 'hierarchy', None),
             }
             
             chunk_records.append(chunk_record)

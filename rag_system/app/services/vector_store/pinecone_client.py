@@ -4,7 +4,6 @@ from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 
 from pinecone import Pinecone, ServerlessSpec
-from pinecone.core.client.exceptions import PineconeException
 
 from app.core.config import settings
 from app.core.logging import get_logger
@@ -78,7 +77,7 @@ class PineconeClient:
                 
                 logger.info(f"Pinecone index created: {self.index_name}")
                 
-            except PineconeException as e:
+            except Exception as e:
                 logger.error(
                     f"Failed to create Pinecone index: {str(e)}",
                     exc_info=True,
@@ -165,7 +164,7 @@ class PineconeClient:
             
             return upserted_count
             
-        except PineconeException as e:
+        except Exception as e:
             logger.error(
                 f"Failed to upsert vectors: {str(e)}",
                 extra={
@@ -211,7 +210,7 @@ class PineconeClient:
                 }
             )
             
-        except PineconeException as e:
+        except Exception as e:
             logger.error(
                 f"Failed to delete vectors: {str(e)}",
                 extra={
@@ -280,7 +279,7 @@ class PineconeClient:
             
             return matches
             
-        except PineconeException as e:
+        except Exception as e:
             logger.error(
                 f"Failed to query vectors: {str(e)}",
                 extra={
@@ -321,9 +320,10 @@ class PineconeClient:
                     },
                 }
                 
-        except PineconeException as e:
+        except Exception as e:
             logger.error(
                 f"Failed to get stats: {str(e)}",
                 exc_info=True,
             )
             raise
+

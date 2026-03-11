@@ -64,11 +64,11 @@ class IngestionManager:
                 f"File type not allowed. Allowed types: {', '.join(self.ALLOWED_EXTENSIONS)}"
             )
         
-        # Optionally validate MIME type if provided
+        # Optionally validate MIME type  if provided
         if content_type and content_type not in self.ALLOWED_MIME_TYPES:
             logger.warning(
                 f"MIME type mismatch: {content_type} for file {filename}",
-                extra={"content_type": content_type, "filename": filename}
+                extra={"content_type": content_type, "file_name": filename}
             )
         
         # Return document type without dot
@@ -184,14 +184,14 @@ class IngestionManager:
                 f"Failed to create document: {str(e)}",
                 extra={
                     "user_id": user_id,
-                    "filename": file.filename if file else None,
+                    "file_name": file.filename if file else None,
                 },
                 exc_info=True,
             )
             await db.rollback()
             raise DatabaseException(
                 f"Failed to create document: {str(e)}",
-                details={"user_id": user_id, "filename": file.filename if file else None}
+                details={"user_id": user_id, "file_name": file.filename if file else None}
             )
     
     async def get_document(

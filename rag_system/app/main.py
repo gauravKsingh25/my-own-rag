@@ -18,6 +18,7 @@ from app.core.exceptions import (
 )
 from app.db.database import init_db, close_db
 from app.db.redis import redis_client
+from app.db import models  # Import models to register them with SQLAlchemy
 from app.api.health import router as health_router
 from app.api.documents import router as documents_router
 from app.api.chat import router as chat_router

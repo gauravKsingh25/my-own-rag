@@ -156,6 +156,8 @@ class ChatErrorResponse(BaseModel):
             }
         }
 
+
+class FeedbackRequest(BaseModel):
     """Request schema for feedback endpoint."""
     
     interaction_id: str = Field(

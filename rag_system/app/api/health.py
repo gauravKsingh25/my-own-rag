@@ -1,6 +1,7 @@
 """Health check endpoints."""
 from fastapi import APIRouter, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
 from app.schemas.health import HealthResponse, ReadinessResponse
 from app.core.config import settings
 from app.db.database import get_db
@@ -58,7 +59,7 @@ async def readiness_check(
     
     # Check PostgreSQL
     try:
-        await db.execute("SELECT 1")
+        await db.execute(text("SELECT 1"))
         services["postgresql"] = {
             "status": "connected",
             "healthy": True,

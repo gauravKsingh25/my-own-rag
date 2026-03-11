@@ -67,7 +67,7 @@ async def upload_document(
         f"Document upload request",
         extra={
             "user_id": user_id,
-            "filename": file.filename,
+            "file_name": file.filename,
             "content_type": file.content_type,
         }
     )
@@ -89,7 +89,7 @@ async def upload_document(
                 "document_id": str(document.id),
                 "user_id": user_id,
                 "task_id": task.id,
-                "filename": file.filename,
+                "file_name": file.filename,
             }
         )
         
@@ -110,7 +110,7 @@ async def upload_document(
             f"Document upload validation failed: {str(e)}",
             extra={
                 "user_id": user_id,
-                "filename": file.filename,
+                "file_name": file.filename,
             }
         )
         raise HTTPException(
@@ -124,7 +124,7 @@ async def upload_document(
             f"Document upload storage error: {e.message}",
             extra={
                 "user_id": user_id,
-                "filename": file.filename,
+                "file_name": file.filename,
                 "details": e.details,
             },
             exc_info=True,
@@ -140,7 +140,7 @@ async def upload_document(
             f"Document upload database error: {e.message}",
             extra={
                 "user_id": user_id,
-                "filename": file.filename,
+                "file_name": file.filename,
                 "details": e.details,
             },
             exc_info=True,
@@ -156,7 +156,7 @@ async def upload_document(
             f"Unexpected error during document upload: {str(e)}",
             extra={
                 "user_id": user_id,
-                "filename": file.filename,
+                "file_name": file.filename,
             },
             exc_info=True,
         )

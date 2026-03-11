@@ -75,7 +75,7 @@ class CircuitBreaker:
         logger.info(
             f"CircuitBreaker '{name}' initialized",
             extra={
-                "name": name,
+                "breaker_name": name,
                 "failure_threshold": self.config.failure_threshold,
                 "timeout": self.config.timeout,
                 "window": self.config.window,
@@ -119,7 +119,7 @@ class CircuitBreaker:
                 logger.info(
                     f"CircuitBreaker '{self.name}' CLOSED",
                     extra={
-                        "name": self.name,
+                        "breaker_name": self.name,
                         "previous_state": "HALF_OPEN",
                         "success_count": self.success_count,
                     },
@@ -143,7 +143,7 @@ class CircuitBreaker:
             logger.warning(
                 f"CircuitBreaker '{self.name}' reopened",
                 extra={
-                    "name": self.name,
+                    "breaker_name": self.name,
                     "previous_state": "HALF_OPEN",
                 },
             )
@@ -157,7 +157,7 @@ class CircuitBreaker:
                 logger.error(
                     f"CircuitBreaker '{self.name}' OPENED",
                     extra={
-                        "name": self.name,
+                        "breaker_name": self.name,
                         "failure_count": len(self.failure_times),
                         "threshold": self.config.failure_threshold,
                         "window": self.config.window,
@@ -192,7 +192,7 @@ class CircuitBreaker:
             
             logger.info(
                 f"CircuitBreaker '{self.name}' entering HALF_OPEN",
-                extra={"name": self.name},
+                extra={"breaker_name": self.name},
             )
         
         # Check current state
@@ -200,7 +200,7 @@ class CircuitBreaker:
             logger.warning(
                 f"CircuitBreaker '{self.name}' is OPEN, rejecting request",
                 extra={
-                    "name": self.name,
+                    "breaker_name": self.name,
                     "opened_at": self.opened_at,
                     "elapsed": time.time() - self.opened_at if self.opened_at else None,
                 },
@@ -225,7 +225,7 @@ class CircuitBreaker:
             logger.error(
                 f"CircuitBreaker '{self.name}' recorded failure",
                 extra={
-                    "name": self.name,
+                    "breaker_name": self.name,
                     "state": self.state.value,
                     "failure_count": len(self.failure_times),
                     "error": str(e),
@@ -244,7 +244,7 @@ class CircuitBreaker:
         self._clean_old_failures()
         
         return {
-            "name": self.name,
+            "breaker_name": self.name,
             "state": self.state.value,
             "failure_count": len(self.failure_times),
             "failure_threshold": self.config.failure_threshold,
@@ -270,7 +270,7 @@ class CircuitBreaker:
         
         logger.info(
             f"CircuitBreaker '{self.name}' manually reset",
-            extra={"name": self.name},
+            extra={"breaker_name": self.name},
         )
 
 
@@ -306,7 +306,7 @@ class CircuitBreakerManager:
             self.breakers[name] = CircuitBreaker(name, config)
             logger.info(
                 f"Created new circuit breaker: {name}",
-                extra={"name": name},
+                extra={"breaker_name": name},
             )
         
         return self.breakers[name]
@@ -329,3 +329,4 @@ class CircuitBreakerManager:
             breaker.reset()
         
         logger.info("All circuit breakers reset")
+

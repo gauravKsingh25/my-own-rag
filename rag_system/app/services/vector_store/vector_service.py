@@ -140,20 +140,28 @@ class VectorService:
             # Create vector ID: document_id + chunk_index
             vector_id = f"{document_id}#{chunk.chunk_index}"
             
-            # Prepare metadata
+            # Prepare metadata (exclude None values as Pinecone rejects them)
             metadata = {
                 "document_id": document_id,
                 "chunk_index": chunk.chunk_index,
                 "content": chunk.content,
                 "content_hash": chunk.content_hash,
                 "token_count": chunk.token_count,
-                "section_title": chunk.section_title,
-                "page_number": chunk.page_number,
             }
             
-            # Add hierarchy if present
-            if chunk.hierarchy:
+            # Add optional fields only if they have values
+            if chunk.section_title is not None:
+                metadata["section_title"] = chunk.section_title
+            if chunk.page_number is not None:
+                metadata["page_number"] = chunk.page_number
+            
+            # Add hierarchy if present (for SQLAlchemy models)
+            if hasattr(chunk, 'hierarchy') and chunk.hierarchy:
                 metadata["hierarchy"] = chunk.hierarchy
+            
+            # Add parent_section_id if present (for Pydantic models)
+            if hasattr(chunk, 'parent_section_id') and chunk.parent_section_id:
+                metadata["parent_section_id"] = chunk.parent_section_id
             
             # Create vector record
             vector_record = VectorRecord(

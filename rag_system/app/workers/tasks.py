@@ -241,7 +241,7 @@ async def process_document(self, document_id: str) -> dict:
         embedding_service = EmbeddingService()
         
         # Get all chunks from chunked document
-        all_chunks = chunked_doc.get_all_chunks()
+        all_chunks = chunked_doc.chunks
         
         # Generate embeddings with caching and deduplication
         embedded_chunks = await embedding_service.embed_chunks(

@@ -46,6 +46,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: rag_fastapi
+    env_file:
+      - .env
     environment:
       # Application
       APP_NAME: ${APP_NAME:-RAG_System}
@@ -72,6 +74,25 @@ services:
       # Storage
       STORAGE_TYPE: ${STORAGE_TYPE:-local}
       STORAGE_BASE_PATH: /app/storage
+      
+      # Gemini AI
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-models/gemini-embedding-001}
+      GEMINI_TIMEOUT: ${GEMINI_TIMEOUT:-30}
+      GEMINI_MAX_RETRIES: ${GEMINI_MAX_RETRIES:-3}
+      
+      # Pinecone
+      PINECONE_API_KEY: ${PINECONE_API_KEY}
+      PINECONE_ENVIRONMENT: ${PINECONE_ENVIRONMENT:-us-east-1}
+      PINECONE_INDEX_NAME: ${PINECONE_INDEX_NAME:-rag-embeddings}
+      PINECONE_DIMENSION: ${PINECONE_DIMENSION:-3072}
+      PINECONE_CLOUD: ${PINECONE_CLOUD:-aws}
+      
+      # Generation Model
+      GENERATION_MODEL: ${GENERATION_MODEL:-gemini-2.0-flash}
+      MODEL_MAX_TOKENS: ${MODEL_MAX_TOKENS:-1048576}
+      MAX_OUTPUT_TOKENS: ${MAX_OUTPUT_TOKENS:-8192}
+      TEMPERATURE: ${TEMPERATURE:-0.1}
       
       # Security
       SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
@@ -102,6 +123,8 @@ services:
       dockerfile: Dockerfile
     container_name: rag_celery_worker
     command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=4
+    env_file:
+      - .env
     environment:
       # Application
       APP_NAME: ${APP_NAME:-RAG_System}
@@ -127,6 +150,25 @@ services:
       # Storage
       STORAGE_TYPE: ${STORAGE_TYPE:-local}
       STORAGE_BASE_PATH: /app/storage
+      
+      # Gemini AI
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-models/gemini-embedding-001}
+      GEMINI_TIMEOUT: ${GEMINI_TIMEOUT:-30}
+      GEMINI_MAX_RETRIES: ${GEMINI_MAX_RETRIES:-3}
+      
+      # Pinecone
+      PINECONE_API_KEY: ${PINECONE_API_KEY}
+      PINECONE_ENVIRONMENT: ${PINECONE_ENVIRONMENT:-us-east-1}
+      PINECONE_INDEX_NAME: ${PINECONE_INDEX_NAME:-rag-embeddings}
+      PINECONE_DIMENSION: ${PINECONE_DIMENSION:-3072}
+      PINECONE_CLOUD: ${PINECONE_CLOUD:-aws}
+      
+      # Generation Model
+      GENERATION_MODEL: ${GENERATION_MODEL:-gemini-2.0-flash}
+      MODEL_MAX_TOKENS: ${MODEL_MAX_TOKENS:-1048576}
+      MAX_OUTPUT_TOKENS: ${MAX_OUTPUT_TOKENS:-8192}
+      TEMPERATURE: ${TEMPERATURE:-0.1}
       
       # Security
       SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
