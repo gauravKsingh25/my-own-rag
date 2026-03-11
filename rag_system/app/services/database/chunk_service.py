@@ -188,3 +188,39 @@ class ChunkService:
         chunks = result.scalars().all()
         
         return list(chunks)
+    @staticmethod
+    async def get_by_document_and_indices(
+        lookups: List[tuple],
+        db: AsyncSession,
+    ) -> List[Chunk]:
+        """
+        Get chunks by (document_id, chunk_index) pairs.
+
+        Used when Pinecone metadata doesn't contain chunk_id — the vector ID
+        is stored as ``document_id#chunk_index``, so we resolve the DB row
+        using those two fields instead.
+
+        Args:
+            lookups: List of (document_id_str, chunk_index) tuples
+            db: Database session
+
+        Returns:
+            List[Chunk]: Matching chunks
+        """
+        if not lookups:
+            return []
+
+        from sqlalchemy import or_, and_, cast
+        from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+
+        conditions = or_(*[
+            and_(
+                cast(Chunk.document_id, PG_UUID) == doc_id,
+                Chunk.chunk_index == idx,
+            )
+            for doc_id, idx in lookups
+        ])
+
+        stmt = select(Chunk).where(conditions)
+        result = await db.execute(stmt)
+        return list(result.scalars().all())

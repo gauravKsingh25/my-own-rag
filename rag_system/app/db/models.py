@@ -13,6 +13,7 @@ from sqlalchemy import (
     Enum,
     Index,
     ForeignKey,
+    UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID, TSVECTOR
 from sqlalchemy.orm import relationship
@@ -144,7 +145,7 @@ class Chunk(Base):
     # Chunk information
     chunk_index = Column(Integer, nullable=False)
     content = Column(Text, nullable=False)
-    content_hash = Column(String(64), nullable=False, index=True)
+    content_hash = Column(String(64), nullable=False)
     
     # Token count
     token_count = Column(Integer, nullable=False)
@@ -189,11 +190,11 @@ class Chunk(Base):
             "ix_chunks_content_hash",
             "content_hash",
         ),
-        # Composite index for document ordering
-        Index(
-            "ix_chunks_document_index",
+        # Unique constraint for document ordering — required for ON CONFLICT (document_id, chunk_index) DO NOTHING
+        UniqueConstraint(
             "document_id",
             "chunk_index",
+            name="uq_chunks_document_index",
         ),
     )
     

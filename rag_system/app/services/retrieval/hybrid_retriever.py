@@ -289,19 +289,30 @@ class HybridRetriever:
         """
         # Create lookup by chunk_id
         results_map = {}
-        
+
+        # Pinecone results that have no chunk_id in metadata — need a DB lookup
+        # by (document_id, chunk_index), because vector IDs are stored as
+        # "document_id#chunk_index" and chunk_id was not written to metadata.
+        pending_lookups: List[Dict[str, Any]] = []
+
         # Add vector results
         for match in vector_results:
             metadata = match.get("metadata", {})
             chunk_id = metadata.get("chunk_id")
-            
+
             if not chunk_id:
-                # Extract from ID (format: document_id#chunk_index)
-                vector_id = match["id"]
-                document_id, chunk_index = vector_id.split("#")
-                # We need to look up chunk_id from database
+                # Parse vector ID: format = "document_id#chunk_index"
+                vector_id = match.get("id", "")
+                parts = vector_id.split("#")
+                if len(parts) == 2:
+                    pending_lookups.append({
+                        "document_id": parts[0],
+                        "chunk_index": int(parts[1]),
+                        "vector_score": match["score"],
+                        "metadata": metadata,
+                    })
                 continue
-            
+
             results_map[chunk_id] = {
                 "chunk_id": chunk_id,
                 "document_id": metadata.get("document_id"),
@@ -312,8 +323,52 @@ class HybridRetriever:
                 "section_title": metadata.get("section_title"),
                 "page_number": metadata.get("page_number"),
                 "metadata": metadata,
-                "created_at": None,  # Will fetch from DB
+                "created_at": None,
             }
+
+        # Resolve pending lookups (chunks stored without chunk_id in Pinecone metadata)
+        if pending_lookups:
+            db_chunks = await ChunkService.get_by_document_and_indices(
+                lookups=[(p["document_id"], p["chunk_index"]) for p in pending_lookups],
+                db=db,
+            )
+            # Build a (document_id, chunk_index) → Chunk lookup
+            db_chunk_map = {
+                (str(c.document_id), c.chunk_index): c for c in db_chunks
+            }
+
+            for pending in pending_lookups:
+                key = (pending["document_id"], pending["chunk_index"])
+                db_chunk = db_chunk_map.get(key)
+                meta = pending["metadata"]
+
+                # Use the DB UUID as the authoritative key; fall back to a
+                # synthetic key so the result is never silently dropped.
+                if db_chunk:
+                    cid = str(db_chunk.id)
+                    content = meta.get("content") or db_chunk.content
+                    section_title = meta.get("section_title") or db_chunk.section_title
+                    page_number = meta.get("page_number") or db_chunk.page_number
+                    created_at = db_chunk.created_at
+                else:
+                    cid = f"{pending['document_id']}#{pending['chunk_index']}"
+                    content = meta.get("content", "")
+                    section_title = meta.get("section_title")
+                    page_number = meta.get("page_number")
+                    created_at = None
+
+                results_map[cid] = {
+                    "chunk_id": cid,
+                    "document_id": pending["document_id"],
+                    "content": content,
+                    "vector_score": pending["vector_score"],
+                    "bm25_score": 0.0,
+                    "chunk_index": pending["chunk_index"],
+                    "section_title": section_title,
+                    "page_number": page_number,
+                    "metadata": meta,
+                    "created_at": created_at,
+                }
         
         # Add/merge BM25 results
         for bm25_result in bm25_results:
@@ -337,17 +392,22 @@ class HybridRetriever:
                     "created_at": None,
                 }
         
-        # Fetch chunk metadata from database to get created_at
-        chunk_ids = [UUID(cid) for cid in results_map.keys()]
-        chunks = await ChunkService.get_by_ids(chunk_ids, db)
-        
-        for chunk in chunks:
-            chunk_id = str(chunk.id)
-            if chunk_id in results_map:
-                results_map[chunk_id]["created_at"] = chunk.created_at
-                # Update content if missing
-                if not results_map[chunk_id]["content"]:
-                    results_map[chunk_id]["content"] = chunk.content
+        # Fetch chunk metadata from database to fill in any missing created_at
+        real_chunk_ids = []
+        for cid in results_map:
+            try:
+                real_chunk_ids.append(UUID(cid))
+            except ValueError:
+                pass  # synthetic key (document_id#chunk_index), already has created_at
+
+        if real_chunk_ids:
+            chunks = await ChunkService.get_by_ids(real_chunk_ids, db)
+            for chunk in chunks:
+                chunk_id = str(chunk.id)
+                if chunk_id in results_map:
+                    results_map[chunk_id]["created_at"] = chunk.created_at
+                    if not results_map[chunk_id]["content"]:
+                        results_map[chunk_id]["content"] = chunk.content
         
         return list(results_map.values())
     
