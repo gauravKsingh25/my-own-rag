@@ -1,0 +1,69 @@
+# ============================================================
+# ROOT-LEVEL GITIGNORE
+# Covers the entire monorepo as a safety net.
+# Each sub-project also has its own .gitignore.
+# ============================================================
+
+# ----- Secrets & credentials (NEVER commit these) ----------
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+.env.development
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+credentials/
+
+# ----- Python (rag_system) ---------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
+
+# ----- Node / Next.js (frontend) ---------------------------
+node_modules/
+.next/
+out/
+/build
+.pnp
+.pnp.js
+.yarn/install-state.gz
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.tsbuildinfo
+next-env.d.ts
+.vercel
+
+# ----- Docker ----------------------------------------------
+docker-compose.override.yml
+
+# ----- Storage & databases ---------------------------------
+storage/
+*.db
+*.sqlite
+
+# ----- OS / editor -----------------------------------------
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

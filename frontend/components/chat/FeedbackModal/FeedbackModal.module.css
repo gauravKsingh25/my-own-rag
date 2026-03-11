@@ -1,0 +1,40 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+.hint {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+.stars {
+  display: flex;
+  gap: var(--sp-1);
+}
+.star {
+  transition: transform var(--t-fast);
+  line-height: 1;
+}
+.star:hover { transform: scale(1.15); }
+
+.ratingLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-warning);
+  text-align: center;
+}
+
+.comment {
+  width: 100%;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-3);
+}

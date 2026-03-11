@@ -1,0 +1,36 @@
+.topbar {
+  height: var(--topbar-h);
+  min-height: var(--topbar-h);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--sp-8);
+  gap: var(--sp-4);
+  flex-shrink: 0;
+}
+
+.left { display: flex; align-items: center; gap: var(--sp-4); }
+
+.title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+}
+
+.right { display: flex; align-items: center; gap: var(--sp-3); }
+
+.userId {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-3);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-size: 0.775rem;
+  color: var(--color-text-muted);
+  font-family: monospace;
+}

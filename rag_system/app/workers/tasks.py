@@ -352,18 +352,27 @@ async def process_document(self, document_id: str) -> dict:
         }
         
     except Exception as e:
+        error_msg = str(e)
+
+        # Detect permanent (non-retryable) errors: auth failures, leaked keys, quota exhaustion
+        is_permanent = any(indicator in error_msg for indicator in [
+            "403", "leaked", "PermissionDenied", "API_KEY_INVALID",
+            "authentication", "permission denied", "quota exceeded",
+        ])
+
         logger.error(
-            f"Document processing failed: {str(e)}",
+            f"Document processing failed: {error_msg}",
             extra={
                 "document_id": document_id,
                 "task_id": self.request.id,
                 "retry_count": self.request.retries,
+                "is_permanent": is_permanent,
             },
             exc_info=True,
         )
-        
-        # Update status to FAILED if this is the last retry
-        if self.request.retries >= self.max_retries:
+
+        # Set FAILED immediately for permanent errors; otherwise wait until retries exhausted
+        if is_permanent or self.request.retries >= self.max_retries:
             try:
                 if db:
                     await ingestion_manager.update_document_status(
@@ -372,7 +381,8 @@ async def process_document(self, document_id: str) -> dict:
                         db=db,
                     )
                     logger.error(
-                        f"Document processing failed permanently after {self.request.retries} retries",
+                        f"Document status set to FAILED (permanent={is_permanent}, "
+                        f"retries={self.request.retries}/{self.max_retries})",
                         extra={
                             "document_id": document_id,
                             "task_id": self.request.id,
@@ -384,8 +394,12 @@ async def process_document(self, document_id: str) -> dict:
                     extra={"document_id": document_id},
                     exc_info=True,
                 )
-        
-        # Re-raise for retry mechanism
+
+        # Don't retry permanent errors — return so Celery doesn't schedule retries
+        if is_permanent:
+            return
+
+        # Re-raise for Celery retry mechanism on transient errors
         raise
         
     finally:

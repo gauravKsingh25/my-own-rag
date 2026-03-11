@@ -1,0 +1,99 @@
+.panel {
+  width: 0;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  transition: width var(--t-slow);
+}
+.open { width: 300px; min-width: 300px; }
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-4) var(--sp-5);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+.title {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+.closeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px; height: 26px;
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  transition: background var(--t-fast);
+}
+.closeBtn:hover { background: var(--color-surface-2); color: var(--color-text-primary); }
+
+.list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.sourceCard {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-3) var(--sp-4);
+}
+.sourceHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-2);
+}
+.sourceNum {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.sourceMeta { flex: 1; min-width: 0; }
+.sectionTitle {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sourceTags { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.tag {
+  font-size: 0.7rem;
+  padding: 1px 6px;
+  background: var(--color-surface-3);
+  border-radius: var(--radius-full);
+  color: var(--color-text-muted);
+}
+.docId {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  font-family: monospace;
+}
+
+.empty { font-size: 0.85rem; color: var(--color-text-muted); padding: var(--sp-4) 0; text-align: center; }

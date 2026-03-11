@@ -1,0 +1,121 @@
+.row {
+  display: flex;
+  gap: var(--sp-3);
+  max-width: 800px;
+}
+
+.userRow {
+  flex-direction: row-reverse;
+  margin-left: auto;
+}
+.assistantRow {
+  margin-right: auto;
+}
+
+.avatar {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.userAvatar {
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+}
+.asstAvatar {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  color: var(--color-primary);
+}
+
+.bubbleWrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  max-width: calc(100% - 42px);
+}
+
+.bubble {
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--radius-xl);
+  line-height: 1.65;
+}
+
+.userBubble {
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+  border-bottom-right-radius: var(--radius-sm);
+}
+.asstBubble {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  border-bottom-left-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+}
+
+.content {
+  font-size: 0.9375rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.citation {
+  display: inline-block;
+  padding: 0 0.3em;
+  margin: 0 1px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border-radius: var(--radius-sm);
+  font-size: 0.8em;
+  font-weight: 600;
+  cursor: default;
+}
+
+/* Meta row */
+.metaRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.actionBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  padding: 2px var(--sp-2);
+  border-radius: var(--radius-sm);
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.actionBtn:hover {
+  background: var(--color-surface-2);
+  color: var(--color-primary);
+}
+
+.ratedBadge {
+  font-size: 0.72rem;
+  color: var(--color-warning);
+}
+
+/* Warnings */
+.warnings { display: flex; flex-direction: column; gap: 2px; }
+.warningItem {
+  font-size: 0.775rem;
+  color: var(--color-warning);
+}
