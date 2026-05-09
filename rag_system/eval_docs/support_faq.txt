@@ -1,0 +1,7 @@
+Support FAQ
+Q: Reset device?
+A: Hold power button for 10 seconds.
+Q: Default admin password?
+A: There is no default password; setup requires creating one.
+Q: SLA response time?
+A: Critical tickets: within 2 hours.

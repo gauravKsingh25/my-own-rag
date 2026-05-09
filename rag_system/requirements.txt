@@ -33,7 +33,7 @@ python-pptx==0.6.23
 tiktoken==0.5.2
 
 # Embeddings and Vector Database
-google-generativeai==0.3.2
+google-generativeai>=0.6.0
 pinecone-client==5.0.1
 
 # Logging

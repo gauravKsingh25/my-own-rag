@@ -5,18 +5,55 @@ import Badge from '@/components/ui/Badge/Badge';
 import { formatDate, formatLatency, formatConfidence, getConfidenceLevel } from '@/lib/utils/format';
 import styles from './MessageBubble.module.css';
 
-/** Renders answer text with [Source N] citations highlighted */
+/** Renders markdown-like answer text with [Source N] citations highlighted */
 function AnswerText({ content }) {
-  const parts = content.split(/(\[Source \d+\])/g);
+  const lines = content.split('\n');
+
+  const renderInline = (text, keyPrefix) => {
+    const parts = text.split(/(\[Source \d+\]|\*\*[^*]+\*\*)/g);
+    return parts.map((part, i) => {
+      if (/^\[Source \d+\]$/.test(part)) {
+        return <span key={`${keyPrefix}-citation-${i}`} className={styles.citation}>{part}</span>;
+      }
+
+      const boldMatch = part.match(/^\*\*([^*]+)\*\*$/);
+      if (boldMatch) {
+        return <strong key={`${keyPrefix}-bold-${i}`}>{boldMatch[1]}</strong>;
+      }
+
+      return part;
+    });
+  };
+
   return (
-    <span>
-      {parts.map((part, i) => {
-        if (/^\[Source \d+\]$/.test(part)) {
-          return <span key={i} className={styles.citation}>{part}</span>;
+    <>
+      {lines.map((line, lineIdx) => {
+        const headingMatch = line.match(/^\s{0,3}(#{1,6})\s+(.+)$/);
+        if (headingMatch) {
+          return (
+            <span key={`heading-${lineIdx}`} className={styles.mdHeading}>
+              {renderInline(headingMatch[2], `heading-${lineIdx}`)}
+            </span>
+          );
         }
-        return part;
+
+        const bulletMatch = line.match(/^\s*[-*]\s+(.+)$/);
+        if (bulletMatch) {
+          return (
+            <span key={`bullet-${lineIdx}`} className={styles.mdBullet}>
+              <span className={styles.mdBulletMark}>•</span>
+              {renderInline(bulletMatch[1], `bullet-${lineIdx}`)}
+            </span>
+          );
+        }
+
+        return (
+          <span key={`line-${lineIdx}`} className={styles.mdLine}>
+            {renderInline(line, `line-${lineIdx}`)}
+          </span>
+        );
       })}
-    </span>
+    </>
   );
 }
 

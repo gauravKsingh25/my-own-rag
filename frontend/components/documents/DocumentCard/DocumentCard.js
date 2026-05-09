@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import clsx from 'clsx';
 import Badge from '@/components/ui/Badge/Badge';
+import Button from '@/components/ui/Button/Button';
 import ProcessingStatus from '../ProcessingStatus/ProcessingStatus';
 import { formatDate, fileTypeLabel } from '@/lib/utils/format';
 import { useApp } from '@/lib/context/AppContext';
@@ -22,7 +23,7 @@ const TYPE_VARIANT = {
   pdf: 'error', docx: 'info', pptx: 'warning', txt: 'default',
 };
 
-export default function DocumentCard({ doc }) {
+export default function DocumentCard({ doc, onDelete, deleting = false }) {
   const router = useRouter();
   const { setSelectedDocumentId } = useApp();
   const isCompleted = doc.processing_status === 'COMPLETED';
@@ -31,6 +32,18 @@ export default function DocumentCard({ doc }) {
   const handleChat = () => {
     setSelectedDocumentId(doc.id);
     router.push('/chat');
+  };
+
+  const handleDelete = () => {
+    if (!onDelete) return;
+
+    const confirmed = window.confirm(
+      `Delete "${doc.filename}"? This permanently removes the file, chunks, and vectors.`
+    );
+
+    if (confirmed) {
+      onDelete(doc);
+    }
   };
 
   return (
@@ -68,15 +81,28 @@ export default function DocumentCard({ doc }) {
         <ProcessingStatus status={doc.processing_status} />
       )}
 
-      {/* CTA */}
-      {isCompleted && (
-        <button className={styles.chatBtn} onClick={handleChat}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-          </svg>
-          Chat with this doc
-        </button>
-      )}
+      {/* Actions */}
+      <div className={styles.actions}>
+        {isCompleted && (
+          <button className={styles.chatBtn} onClick={handleChat}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            Chat with this doc
+          </button>
+        )}
+
+        <Button
+          variant="danger"
+          size="sm"
+          className={styles.deleteBtn}
+          onClick={handleDelete}
+          loading={deleting}
+          disabled={deleting}
+        >
+          {deleting ? 'Deleting...' : 'Delete'}
+        </Button>
+      </div>
     </div>
   );
 }

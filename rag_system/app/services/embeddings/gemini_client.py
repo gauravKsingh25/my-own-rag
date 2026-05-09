@@ -1,5 +1,6 @@
 """Gemini embedding client for generating text embeddings."""
 import time
+import inspect
 from typing import List, Dict, Any
 from enum import Enum
 import google.generativeai as genai
@@ -41,6 +42,14 @@ class GeminiEmbeddingClient:
         self.model_name = model_name or settings.GEMINI_MODEL
         self.timeout = timeout or settings.GEMINI_TIMEOUT
         self.max_retries = max_retries or settings.GEMINI_MAX_RETRIES
+        self.output_dimension = settings.PINECONE_DIMENSION
+
+        try:
+            self.supports_output_dimensionality = (
+                "output_dimensionality" in inspect.signature(genai.embed_content).parameters
+            )
+        except (TypeError, ValueError):
+            self.supports_output_dimensionality = False
         
         # Configure Gemini
         genai.configure(api_key=self.api_key)
@@ -51,6 +60,7 @@ class GeminiEmbeddingClient:
                 "model": self.model_name,
                 "timeout": self.timeout,
                 "max_retries": self.max_retries,
+                "output_dimension": self.output_dimension,
             }
         )
     
@@ -111,11 +121,22 @@ class GeminiEmbeddingClient:
             
             for text in texts:
                 # Call Gemini API
-                result = genai.embed_content(
-                    model=self.model_name,
-                    content=text,
-                    task_type=task_type,
-                )
+                embed_kwargs = {
+                    "model": self.model_name,
+                    "content": text,
+                    "task_type": task_type,
+                }
+                if self.supports_output_dimensionality:
+                    embed_kwargs["output_dimensionality"] = self.output_dimension
+
+                try:
+                    result = genai.embed_content(**embed_kwargs)
+                except TypeError as e:
+                    if "output_dimensionality" in str(e):
+                        embed_kwargs.pop("output_dimensionality", None)
+                        result = genai.embed_content(**embed_kwargs)
+                    else:
+                        raise
                 
                 # Extract embedding vector
                 embedding = result['embedding']
@@ -201,5 +222,4 @@ class GeminiEmbeddingClient:
         Returns:
             int: Embedding dimension
         """
-        # Gemini embedding-001 produces 768-dimensional embeddings
-        return 768
+        return self.output_dimension

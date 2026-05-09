@@ -20,6 +20,18 @@ from app.core.logging import get_logger
 logger = get_logger(__name__)
 
 
+class DocumentDeletedError(Exception):
+    """Raised when a processing task detects its document was deleted."""
+
+
+async def ensure_document_exists(document_id: UUID, db: AsyncSession):
+    """Raise DocumentDeletedError when the document no longer exists."""
+    existing = await ingestion_manager.get_document(document_id, db)
+    if not existing:
+        raise DocumentDeletedError(f"Document {document_id} was deleted")
+    return existing
+
+
 class AsyncTask(Task):
     """Base task class that supports async operations."""
     
@@ -95,10 +107,7 @@ async def process_document(self, document_id: str) -> dict:
         )
         
         # Get document metadata from database
-        document = await ingestion_manager.get_document(doc_id, db)
-        
-        if not document:
-            raise Exception(f"Document {document_id} not found in database")
+        document = await ensure_document_exists(doc_id, db)
         
         # Construct file path
         storage_base = Path(settings.STORAGE_BASE_PATH)
@@ -167,6 +176,8 @@ async def process_document(self, document_id: str) -> dict:
         # ============================================================
         # CHUNKING PHASE
         # ============================================================
+
+        await ensure_document_exists(doc_id, db)
         
         logger.info(
             f"Starting document chunking",
@@ -231,6 +242,8 @@ async def process_document(self, document_id: str) -> dict:
         # ============================================================
         # EMBEDDING PHASE
         # ============================================================
+
+        await ensure_document_exists(doc_id, db)
         
         logger.info(
             f"Starting embedding generation",
@@ -273,6 +286,8 @@ async def process_document(self, document_id: str) -> dict:
         # ============================================================
         # VECTOR STORAGE PHASE
         # ============================================================
+
+        await ensure_document_exists(doc_id, db)
         
         logger.info(
             f"Starting vector storage",
@@ -300,6 +315,8 @@ async def process_document(self, document_id: str) -> dict:
         # ============================================================
         # DATABASE STORAGE PHASE
         # ============================================================
+
+        await ensure_document_exists(doc_id, db)
         
         logger.info(
             f"Starting database chunk storage",
@@ -351,6 +368,20 @@ async def process_document(self, document_id: str) -> dict:
             "vectors_stored": vectors_stored,
         }
         
+    except DocumentDeletedError as e:
+        logger.info(
+            f"Stopping processing for deleted document: {str(e)}",
+            extra={
+                "document_id": document_id,
+                "task_id": self.request.id,
+            },
+        )
+        return {
+            "document_id": document_id,
+            "status": "DELETED",
+            "task_id": self.request.id,
+        }
+
     except Exception as e:
         error_msg = str(e)
 

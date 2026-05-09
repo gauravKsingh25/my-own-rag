@@ -65,6 +65,27 @@
   word-break: break-word;
 }
 
+.mdLine,
+.mdHeading,
+.mdBullet {
+  display: block;
+}
+
+.mdHeading {
+  font-weight: 700;
+  margin-top: 0.2rem;
+}
+
+.mdBullet {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
+.mdBulletMark {
+  line-height: 1.6;
+}
+
 .citation {
   display: inline-block;
   padding: 0 0.3em;

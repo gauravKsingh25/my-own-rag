@@ -57,7 +57,7 @@ class Settings(BaseSettings):
     
     # Gemini AI
     GEMINI_API_KEY: str = "your-gemini-api-key-here"
-    GEMINI_MODEL: str = "models/embedding-001"
+    GEMINI_MODEL: str = "models/gemini-embedding-001"
     GEMINI_TIMEOUT: int = 30
     GEMINI_MAX_RETRIES: int = 3
     
@@ -65,7 +65,7 @@ class Settings(BaseSettings):
     PINECONE_API_KEY: str = "your-pinecone-api-key-here"
     PINECONE_ENVIRONMENT: str = "us-west1-gcp"
     PINECONE_INDEX_NAME: str = "rag-embeddings"
-    PINECONE_DIMENSION: int = 768
+    PINECONE_DIMENSION: int = 3072
     PINECONE_CLOUD: str = "gcp"
     
     # Generation Model

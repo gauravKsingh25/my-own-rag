@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { getUserId } from '@/lib/utils/uuid';
-import { DOCS_STORAGE_PREFIX, PROCESSING_STATUSES } from '@/lib/utils/constants';
+import { DOCS_STORAGE_PREFIX } from '@/lib/utils/constants';
 import { getDocument } from '@/lib/api/documents';
 
 const AppContext = createContext(null);
@@ -57,6 +57,17 @@ export function AppProvider({ children }) {
     );
   }, []);
 
+  const removeDocument = useCallback(
+    (docId) => {
+      setDocuments((prev) => {
+        const next = prev.filter((d) => d.id !== docId);
+        persistDocIds(next, userId);
+        return next;
+      });
+    },
+    [userId, persistDocIds]
+  );
+
   const completedDocuments = documents.filter(
     (d) => d.processing_status === 'COMPLETED'
   );
@@ -69,6 +80,7 @@ export function AppProvider({ children }) {
         completedDocuments,
         addDocument,
         updateDocument,
+        removeDocument,
         selectedDocumentId,
         setSelectedDocumentId,
       }}

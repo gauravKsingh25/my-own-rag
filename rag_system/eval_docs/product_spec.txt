@@ -1,0 +1,6 @@
+Product Spec: Falcon X1
+Release date: 2026-01-15
+Battery life: 14 hours
+Water resistance: IP68
+Price: 799 USD
+Warranty: 24 months

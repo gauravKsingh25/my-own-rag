@@ -95,7 +95,7 @@ GEMINI_MAX_RETRIES=3
 PINECONE_API_KEY=your-api-key
 PINECONE_ENVIRONMENT=us-west1-gcp
 PINECONE_INDEX_NAME=rag-embeddings
-PINECONE_DIMENSION=768
+PINECONE_DIMENSION=3072
 PINECONE_CLOUD=gcp
 ```
 
@@ -106,7 +106,7 @@ PINECONE_CLOUD=gcp
 @dataclass
 class EmbeddedChunk:
     chunk: Chunk              # Original chunk
-    embedding: List[float]    # 768-dimensional vector
+  embedding: List[float]    # 3072-dimensional vector
 ```
 
 ### VectorRecord

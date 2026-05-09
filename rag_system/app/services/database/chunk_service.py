@@ -133,6 +133,7 @@ class ChunkService:
     async def delete_by_document_id(
         document_id: UUID,
         db: AsyncSession,
+        auto_commit: bool = True,
     ):
         """
         Delete all chunks for a document.
@@ -140,6 +141,7 @@ class ChunkService:
         Args:
             document_id: Document UUID
             db: Database session
+            auto_commit: Whether to commit immediately after delete
         """
         logger.info(
             f"Deleting chunks for document",
@@ -155,7 +157,9 @@ class ChunkService:
         # Delete chunks (CASCADE will handle vector deletion)
         stmt = text("DELETE FROM chunks WHERE document_id = :document_id")
         await db.execute(stmt, {"document_id": str(document_id)})
-        await db.commit()
+
+        if auto_commit:
+            await db.commit()
         
         logger.info(
             f"Chunks deleted for document",

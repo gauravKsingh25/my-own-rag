@@ -4,7 +4,6 @@ from fastapi import (
     APIRouter,
     Depends,
     File,
-    Form,
     HTTPException,
     UploadFile,
     status,
@@ -15,11 +14,13 @@ from app.db.database import get_db
 from app.schemas.document import (
     DocumentUploadResponse,
     DocumentResponse,
+    DocumentDeleteResponse,
 )
 from app.services.ingestion import ingestion_manager
 from app.workers.tasks import process_document
 from app.core.logging import get_logger
 from app.core.exceptions import StorageException, DatabaseException
+from app.core.auth import get_authenticated_user_id
 
 logger = get_logger(__name__)
 
@@ -35,7 +36,7 @@ router = APIRouter(prefix="/documents", tags=["Documents"])
 )
 async def upload_document(
     file: UploadFile = File(..., description="Document file to upload"),
-    user_id: str = Form(..., description="User identifier"),
+    user_id: str = Depends(get_authenticated_user_id),
     db: AsyncSession = Depends(get_db),
 ) -> DocumentUploadResponse:
     """
@@ -270,4 +271,92 @@ async def get_document(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred while retrieving document",
+        )
+
+
+@router.delete(
+    "/{document_id}",
+    response_model=DocumentDeleteResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Delete a document",
+    description=(
+        "Delete a document and all related data from metadata, chunk storage, "
+        "vector store, and file storage."
+    ),
+)
+async def delete_document(
+    document_id: UUID,
+    user_id: str = Depends(get_authenticated_user_id),
+    db: AsyncSession = Depends(get_db),
+) -> DocumentDeleteResponse:
+    """Delete a document and its associated data from all storage layers."""
+    logger.info(
+        "Document deletion request",
+        extra={
+            "document_id": str(document_id),
+            "user_id": user_id,
+        },
+    )
+
+    try:
+        document = await ingestion_manager.get_document(
+            document_id=document_id,
+            db=db,
+        )
+
+        if not document:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Document {document_id} not found",
+            )
+
+        if document.user_id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not allowed to delete this document",
+            )
+
+        await ingestion_manager.delete_document_data(
+            document_id=document_id,
+            user_id=user_id,
+            db=db,
+        )
+
+        return DocumentDeleteResponse(
+            document_id=document_id,
+            user_id=user_id,
+            deleted=True,
+            message="Document deleted from metadata, chunks, vectors, and file storage",
+        )
+
+    except HTTPException:
+        raise
+
+    except (StorageException, DatabaseException) as e:
+        logger.error(
+            f"Document deletion failed: {e.message}",
+            extra={
+                "document_id": str(document_id),
+                "user_id": user_id,
+                "details": e.details,
+            },
+            exc_info=True,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete document: {e.message}",
+        )
+
+    except Exception as e:
+        logger.error(
+            f"Unexpected error deleting document: {str(e)}",
+            extra={
+                "document_id": str(document_id),
+                "user_id": user_id,
+            },
+            exc_info=True,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while deleting document",
         )

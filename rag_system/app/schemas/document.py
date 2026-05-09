@@ -85,6 +85,26 @@ class DocumentResponse(BaseModel):
         }
 
 
+class DocumentDeleteResponse(BaseModel):
+    """Response schema for document deletion."""
+
+    document_id: UUID = Field(..., description="Deleted document identifier")
+    user_id: str = Field(..., description="User identifier")
+    deleted: bool = Field(..., description="Whether deletion completed")
+    message: str = Field(..., description="Deletion status message")
+
+    class Config:
+        from_attributes = True
+        json_schema_extra = {
+            "example": {
+                "document_id": "123e4567-e89b-12d3-a456-426614174000",
+                "user_id": "user123",
+                "deleted": True,
+                "message": "Document deleted from metadata, chunks, vectors, and file storage",
+            }
+        }
+
+
 class ErrorResponse(BaseModel):
     """Standard error response schema."""
     

@@ -2,13 +2,19 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useApp } from '@/lib/context/AppContext';
-import { uploadDocument as uploadDocumentAPI, getDocument } from '@/lib/api/documents';
+import {
+  uploadDocument as uploadDocumentAPI,
+  getDocument,
+  deleteDocument as deleteDocumentAPI,
+} from '@/lib/api/documents';
 import { POLL_INTERVAL, PROCESSING_STATUSES } from '@/lib/utils/constants';
 
 export function useDocuments() {
-  const { userId, documents, addDocument, updateDocument } = useApp();
+  const { userId, documents, addDocument, updateDocument, removeDocument } = useApp();
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
+  const [deleteError, setDeleteError] = useState(null);
+  const [deletingDocIds, setDeletingDocIds] = useState({});
   const pollMap = useRef({});
 
   /** Poll a single document every POLL_INTERVAL until terminal status */
@@ -84,5 +90,35 @@ export function useDocuments() {
     [userId, addDocument, startPolling]
   );
 
-  return { documents, uploading, uploadError, upload };
+  const remove = useCallback(
+    async (docId) => {
+      if (!userId) throw new Error('User not initialised');
+
+      setDeletingDocIds((prev) => ({ ...prev, [docId]: true }));
+      setDeleteError(null);
+
+      try {
+        await deleteDocumentAPI(docId, userId);
+
+        if (pollMap.current[docId]) {
+          clearInterval(pollMap.current[docId]);
+          delete pollMap.current[docId];
+        }
+
+        removeDocument(docId);
+      } catch (err) {
+        setDeleteError(err);
+        throw err;
+      } finally {
+        setDeletingDocIds((prev) => {
+          const next = { ...prev };
+          delete next[docId];
+          return next;
+        });
+      }
+    },
+    [userId, removeDocument]
+  );
+
+  return { documents, uploading, uploadError, deleteError, deletingDocIds, upload, remove };
 }

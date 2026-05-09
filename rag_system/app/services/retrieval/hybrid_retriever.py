@@ -206,22 +206,39 @@ class HybridRetriever:
             scored_results = ScoringService.rank_results(scored_results, "score")[:top_k]
         
         # Step 7: Convert to RetrievalResult objects
-        final_results = [
-            RetrievalResult(
-                chunk_id=UUID(r["chunk_id"]),
-                document_id=UUID(r["document_id"]),
-                content=r["content"],
-                score=r["score"],
-                vector_score=r["vector_score"],
-                bm25_score=r["bm25_score"],
-                recency_score=r["recency_score"],
-                chunk_index=r["chunk_index"],
-                section_title=r.get("section_title"),
-                page_number=r.get("page_number"),
-                metadata=r.get("metadata"),
+        final_results: List[RetrievalResult] = []
+        for r in scored_results:
+            try:
+                chunk_uuid = UUID(r["chunk_id"])
+                document_uuid = UUID(r["document_id"])
+            except (ValueError, TypeError, KeyError):
+                # Some fallback merge paths can temporarily produce synthetic
+                # IDs (e.g., "document_id#chunk_index"). Skip them so a
+                # malformed ID never breaks the full chat request.
+                logger.warning(
+                    "Skipping retrieval result with invalid UUIDs",
+                    extra={
+                        "chunk_id": r.get("chunk_id"),
+                        "document_id": r.get("document_id"),
+                    },
+                )
+                continue
+
+            final_results.append(
+                RetrievalResult(
+                    chunk_id=chunk_uuid,
+                    document_id=document_uuid,
+                    content=r["content"],
+                    score=r["score"],
+                    vector_score=r["vector_score"],
+                    bm25_score=r["bm25_score"],
+                    recency_score=r["recency_score"],
+                    chunk_index=r["chunk_index"],
+                    section_title=r.get("section_title"),
+                    page_number=r.get("page_number"),
+                    metadata=r.get("metadata"),
+                )
             )
-            for r in scored_results
-        ]
         
         logger.info(
             f"Hybrid retrieval complete",

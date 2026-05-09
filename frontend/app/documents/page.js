@@ -3,13 +3,12 @@
 import toast from 'react-hot-toast';
 import DropZone from '@/components/documents/DropZone/DropZone';
 import DocumentCard from '@/components/documents/DocumentCard/DocumentCard';
-import Spinner from '@/components/ui/Spinner/Spinner';
 import { useDocuments } from '@/lib/hooks/useDocuments';
 import { APIError } from '@/lib/api/client';
 import styles from './page.module.css';
 
 export default function DocumentsPage() {
-  const { documents, uploading, upload } = useDocuments();
+  const { documents, uploading, deletingDocIds, upload, remove } = useDocuments();
 
   const handleUpload = async (file) => {
     try {
@@ -17,6 +16,16 @@ export default function DocumentsPage() {
       toast.success(`"${file.name}" uploaded! Processing started.`);
     } catch (err) {
       const msg = err instanceof APIError ? err.message : 'Upload failed — please try again.';
+      toast.error(msg);
+    }
+  };
+
+  const handleDelete = async (doc) => {
+    try {
+      await remove(doc.id);
+      toast.success(`"${doc.filename}" deleted from all storage.`);
+    } catch (err) {
+      const msg = err instanceof APIError ? err.message : 'Delete failed — please try again.';
       toast.error(msg);
     }
   };
@@ -43,7 +52,12 @@ export default function DocumentsPage() {
           <h3 className={styles.sectionTitle}>Your Documents</h3>
           <div className={styles.grid}>
             {documents.map((doc) => (
-              <DocumentCard key={doc.id} doc={doc} />
+              <DocumentCard
+                key={doc.id}
+                doc={doc}
+                onDelete={handleDelete}
+                deleting={Boolean(deletingDocIds[doc.id])}
+              />
             ))}
           </div>
         </section>

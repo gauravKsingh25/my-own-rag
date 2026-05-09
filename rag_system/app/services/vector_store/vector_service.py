@@ -1,4 +1,5 @@
 """Vector storage service."""
+import asyncio
 from typing import List, Optional
 from uuid import UUID
 
@@ -84,7 +85,7 @@ class VectorService:
         
         return upserted_count
     
-    def delete_document(
+    async def delete_document(
         self,
         document_id: str,
         user_id: str,
@@ -104,7 +105,10 @@ class VectorService:
             }
         )
         
-        self.pinecone_client.delete_by_document_id(
+        # Pinecone client delete is synchronous; run in a worker thread so this
+        # method can be safely awaited from async request handlers.
+        await asyncio.to_thread(
+            self.pinecone_client.delete_by_document_id,
             document_id=document_id,
             namespace=user_id,
         )

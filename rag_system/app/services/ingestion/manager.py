@@ -1,6 +1,7 @@
 """Document ingestion manager service."""
 import uuid
-from typing import BinaryIO, Optional
+from pathlib import Path
+from typing import Optional
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -8,8 +9,9 @@ from fastapi import UploadFile
 
 from app.db.models import Document, ProcessingStatus
 from app.services.storage import LocalStorageService
+from app.services.database import ChunkService
+from app.services.vector_store import VectorService
 from app.core.exceptions import StorageException, DatabaseException
-from app.core.config import settings
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -38,6 +40,102 @@ class IngestionManager:
             storage_service: Storage service instance (optional, creates default if None)
         """
         self.storage_service = storage_service or LocalStorageService()
+
+    async def delete_document_data(
+        self,
+        document_id: UUID,
+        user_id: str,
+        db: AsyncSession,
+    ) -> None:
+        """
+        Delete document data from all storages.
+
+        Deletion sequence:
+        1. Validate document ownership
+        2. Delete vectors from Pinecone
+        3. Delete chunks from PostgreSQL
+        4. Delete file from local storage
+        5. Delete document metadata row
+
+        Args:
+            document_id: Document UUID
+            user_id: User identifier
+            db: Database session
+
+        Raises:
+            DatabaseException: If document missing/ownership mismatch or DB delete fails
+            StorageException: If local file deletion fails unexpectedly
+            Exception: If vector deletion fails
+        """
+        document = await self.get_document(document_id=document_id, db=db)
+
+        if not document:
+            raise DatabaseException(
+                "Document not found",
+                details={"document_id": str(document_id)},
+            )
+
+        if document.user_id != user_id:
+            raise DatabaseException(
+                "Document does not belong to this user",
+                details={
+                    "document_id": str(document_id),
+                    "user_id": user_id,
+                },
+            )
+
+        logger.info(
+            "Starting document deletion",
+            extra={
+                "document_id": str(document_id),
+                "user_id": user_id,
+                "storage_path": document.storage_path,
+            },
+        )
+
+        # Delete vectors first so retrieval cannot return stale embeddings.
+        vector_service = VectorService()
+        await vector_service.delete_document(
+            document_id=str(document_id),
+            user_id=user_id,
+        )
+
+        # Rely on the request-scoped session to handle commit/rollback.
+        # Stage chunk row deletion but defer commit until metadata delete is staged too.
+        await ChunkService.delete_by_document_id(
+            document_id=document_id,
+            db=db,
+            auto_commit=False,
+        )
+
+        # Delete original file from local storage (if still present).
+        file_name = Path(document.storage_path).name
+        deleted_file = await self.storage_service.delete_file(
+            user_id=user_id,
+            doc_id=str(document_id),
+            filename=file_name,
+        )
+
+        if not deleted_file:
+            logger.warning(
+                "Document file already absent during delete",
+                extra={
+                    "document_id": str(document_id),
+                    "user_id": user_id,
+                    "storage_path": document.storage_path,
+                },
+            )
+
+        # Delete metadata row last after all other storage cleanups succeeded.
+        await db.delete(document)
+
+        logger.info(
+            "Document deletion completed",
+            extra={
+                "document_id": str(document_id),
+                "user_id": user_id,
+            },
+        )
     
     def _validate_file_type(self, filename: str, content_type: Optional[str]) -> str:
         """

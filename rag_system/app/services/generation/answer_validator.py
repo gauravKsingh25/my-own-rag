@@ -20,8 +20,9 @@ class AnswerValidator:
     - Flag invalid citations
     """
     
-    # Regex pattern for citation detection
-    CITATION_PATTERN = r'\[Source\s+(\d+)(?:\s*,\s*(\d+))*\]'
+    # Regex pattern for bracketed citation blocks, e.g.:
+    # [Source 1], [Source 1, 2], [Source 1, Source 3], [Sources: 1, 3]
+    CITATION_BLOCK_PATTERN = r'\[(?:\s*sources?\b[^\]]*)\]'
     
     # Keywords that suggest lack of information
     UNCERTAINTY_PATTERNS = [
@@ -49,7 +50,7 @@ class AnswerValidator:
     
     def __init__(self):
         """Initialize answer validator."""
-        self.citation_regex = re.compile(self.CITATION_PATTERN, re.IGNORECASE)
+        self.citation_block_regex = re.compile(self.CITATION_BLOCK_PATTERN, re.IGNORECASE)
         self.uncertainty_regex = [
             re.compile(pattern, re.IGNORECASE)
             for pattern in self.UNCERTAINTY_PATTERNS
@@ -152,25 +153,19 @@ class AnswerValidator:
         """
         citations: Set[int] = set()
         
-        # Find all citation patterns
-        matches = self.citation_regex.finditer(answer)
-        
-        for match in matches:
-            # Extract all numbers from the match
-            # Group 0 is the full match, groups after are individual numbers
-            full_match = match.group(0)
-            
-            # Extract all numbers from the citation
-            numbers = re.findall(r'\d+', full_match)
-            
-            for num_str in numbers:
+        # Find all bracketed source blocks and extract numeric source IDs
+        # from each block. This keeps citations[] aligned with answer mentions
+        # across multiple formats like [Source 1, Source 3].
+        for match in self.citation_block_regex.finditer(answer):
+            citation_block = match.group(0)
+
+            for num_str in re.findall(r'\d+', citation_block):
                 try:
-                    num = int(num_str)
-                    citations.add(num)
+                    citations.add(int(num_str))
                 except ValueError:
                     logger.warning(
                         f"Invalid citation number: {num_str}",
-                        extra={"match": full_match}
+                        extra={"match": citation_block}
                     )
         
         # Sort for consistency
